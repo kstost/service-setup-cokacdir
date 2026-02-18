@@ -1,0 +1,39 @@
+{
+  "name": "service-setup-cokacdir",
+  "version": "1.0.0",
+  "description": "Register cokacdir as a system service with a single command (Linux & macOS)",
+  "bin": {
+    "service-setup-cokacdir": "./bin/setup.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "keywords": [
+    "cokacdir",
+    "systemd",
+    "service",
+    "telegram",
+    "bot",
+    "daemon",
+    "launchd",
+    "macos"
+  ],
+  "author": {
+    "name": "코드깎는노인",
+    "email": "monogatree@gmail.com",
+    "url": "https://cokacdir.cokac.com"
+  },
+  "homepage": "https://cokacdir.cokac.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/monogatree/service-setup-cokacdir"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=14"
+  },
+  "os": [
+    "linux",
+    "darwin"
+  ]
+}
