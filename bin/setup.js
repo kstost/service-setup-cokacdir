@@ -47,6 +47,11 @@ const platform = os.platform();
 const serviceName = "cokacdir";
 const homeDir = os.homedir();
 
+// 셸 스크립트에 삽입할 인자를 싱글-쿼트로 이스케이프
+function escapeShellArg(str) {
+  return "'" + str.replace(/'/g, "'\\''") + "'";
+}
+
 // XML 1.0에서 허용되지 않는 제어 문자(U+0000-U+0008, U+000B, U+000C, U+000E-U+001F)를
 // 제거한 뒤 XML 특수 문자를 이스케이프
 function escapeXml(str) {
@@ -111,15 +116,19 @@ function setupLinux() {
     process.env.XDG_STATE_HOME || path.join(homeDir, ".local", "state");
   const logDir = path.join(xdgStateHome, "cokacdir");
 
-  // -- 을 삽입해 토큰이 플래그로 오해되는 것을 방지
-  const execStart = [binaryPath, "--ccserver", "--", ...tokens]
-    .map(escapeSystemdArg)
-    .join(" ");
-
   // systemd는 경로 내 $ 및 % 를 특수 문자로 해석하므로 이스케이프
   const systemdLogDir = logDir
     .replace(/\$/g, () => "$$")
     .replace(/%/g, "%%");
+
+  // 래퍼 스크립트: bash -i 로 사용자 셸 환경(PATH 포함)을 매 시작마다 로드
+  const wrapperFile = path.join(logDir, "run.sh");
+  const shellArgs = tokens.map(escapeShellArg).join(" ");
+  const wrapperContent = `#!/bin/bash -i
+exec ${escapeShellArg(binaryPath)} --ccserver -- ${shellArgs}
+`;
+
+  const execStart = escapeSystemdArg(wrapperFile);
 
   // StandardOutput=append: 는 systemd v240 이상에서 지원
   // file: 은 v236 이상, 그 미만은 journal로 폴백
@@ -165,6 +174,14 @@ WantedBy=default.target
     fs.mkdirSync(logDir, { recursive: true });
   } catch (err) {
     console.error(`Error: failed to create directories: ${err.message}`);
+    process.exit(1);
+  }
+
+  // 래퍼 스크립트 작성 (토큰 포함이므로 0o700)
+  try {
+    fs.writeFileSync(wrapperFile, wrapperContent, { mode: 0o700 });
+  } catch (err) {
+    console.error(`Error: failed to write wrapper script: ${err.message}`);
     process.exit(1);
   }
 
@@ -256,11 +273,12 @@ function setupMacOS() {
   const plistFile = path.join(agentDir, `${label}.plist`);
   const logDir = path.join(homeDir, "Library", "Logs", "cokacdir");
 
-  // -- 을 삽입해 토큰이 플래그로 오해되는 것을 방지
-  const programArgs = [binaryPath, "--ccserver", "--", ...tokens];
-  const argsXml = programArgs
-    .map((arg) => `        <string>${escapeXml(arg)}</string>`)
-    .join("\n");
+  // 래퍼 스크립트: bash -i 로 사용자 셸 환경(PATH 포함)을 매 시작마다 로드
+  const wrapperFile = path.join(logDir, "run.sh");
+  const shellArgs = tokens.map(escapeShellArg).join(" ");
+  const wrapperContent = `#!/bin/bash -i
+exec ${escapeShellArg(binaryPath)} --ccserver -- ${shellArgs}
+`;
 
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -270,7 +288,7 @@ function setupMacOS() {
     <string>${label}</string>
     <key>ProgramArguments</key>
     <array>
-${argsXml}
+        <string>${escapeXml(wrapperFile)}</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -289,6 +307,14 @@ ${argsXml}
     fs.mkdirSync(logDir, { recursive: true });
   } catch (err) {
     console.error(`Error: failed to create directories: ${err.message}`);
+    process.exit(1);
+  }
+
+  // 래퍼 스크립트 작성 (토큰 포함이므로 0o700)
+  try {
+    fs.writeFileSync(wrapperFile, wrapperContent, { mode: 0o700 });
+  } catch (err) {
+    console.error(`Error: failed to write wrapper script: ${err.message}`);
     process.exit(1);
   }
 
