@@ -1,6 +1,6 @@
 {
   "name": "service-setup-cokacdir",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Register cokacdir as a system service with a single command (Linux & macOS)",
   "bin": {
     "service-setup-cokacdir": "./bin/setup.js"
