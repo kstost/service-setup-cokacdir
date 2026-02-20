@@ -273,10 +273,11 @@ function setupMacOS() {
   const plistFile = path.join(agentDir, `${label}.plist`);
   const logDir = path.join(homeDir, "Library", "Logs", "cokacdir");
 
-  // 래퍼 스크립트: bash -i 로 사용자 셸 환경(PATH 포함)을 매 시작마다 로드
+  // 래퍼 스크립트: 토큰을 별도 파일에 분리 (0o700)
+  // launchd가 /bin/zsh -li 로 직접 호출하여 ~/.zprofile + ~/.zshrc 소싱
   const wrapperFile = path.join(logDir, "run.sh");
   const shellArgs = tokens.map(escapeShellArg).join(" ");
-  const wrapperContent = `#!/bin/bash -i
+  const wrapperContent = `#!/bin/zsh
 exec ${escapeShellArg(binaryPath)} --ccserver -- ${shellArgs}
 `;
 
@@ -288,6 +289,8 @@ exec ${escapeShellArg(binaryPath)} --ccserver -- ${shellArgs}
     <string>${label}</string>
     <key>ProgramArguments</key>
     <array>
+        <string>/bin/zsh</string>
+        <string>-li</string>
         <string>${escapeXml(wrapperFile)}</string>
     </array>
     <key>RunAtLoad</key>
