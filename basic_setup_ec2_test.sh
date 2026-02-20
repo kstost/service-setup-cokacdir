@@ -48,7 +48,7 @@ echo "[OK] Node.js $(node -v)"
 # 3. Install playwright-cli globally
 echo ""
 echo "[2/5] Installing playwright-cli globally..."
-sudo npm install -g @playwright/cli@latest
+npm install -g @playwright/cli@latest
 
 GLOBAL_MODULES=$(npm root -g)
 PW_CLI="$GLOBAL_MODULES/@playwright/cli/node_modules/playwright-core/cli.js"
